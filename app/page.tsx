@@ -112,6 +112,12 @@ function todayStr(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+function shiftDate(dateStr: string, offset: number): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const dt = new Date(y, m - 1, d + offset);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+}
+
 function dayIndex(s: string): number {
   const [y, m, d] = s.split("-").map(Number);
   return Math.floor(new Date(y, m - 1, d).getTime() / 86400000);
@@ -158,6 +164,7 @@ export default function Home() {
     breakdown: { item: string; calories: number }[];
     confidence: string;
   } | null>(null);
+  const [selectedDate, setSelectedDate] = useState(todayStr);
   const [editingMeal, setEditingMeal] = useState<{
     index: number;
     name: string;
@@ -257,16 +264,19 @@ export default function Home() {
     updateDay(today, (d) => ({ ...d, weight: Number.isNaN(num) ? null : num }));
   }
 
-  function deleteMeal(index: number) {
+  const isToday = selectedDate === today;
+  const selectedDay: Day = data.days[selectedDate] ?? { meals: [], weight: null };
+
+  function deleteMeal(dateStr: string, index: number) {
     if (editingMeal?.index === index) setEditingMeal(null);
-    updateDay(today, (d) => ({
+    updateDay(dateStr, (d) => ({
       ...d,
       meals: d.meals.filter((_, i) => i !== index),
     }));
   }
 
   function startEditMeal(index: number) {
-    const meal = day.meals[index];
+    const meal = selectedDay.meals[index];
     if (!meal) return;
     setEditingMeal({ index, name: meal.name, cal: String(meal.cal) });
   }
@@ -275,7 +285,7 @@ export default function Home() {
     if (!editingMeal) return;
     const cal = parseInt(editingMeal.cal, 10);
     if (!editingMeal.name.trim() || Number.isNaN(cal) || cal < 0) return;
-    updateDay(today, (d) => ({
+    updateDay(selectedDate, (d) => ({
       ...d,
       meals: d.meals.map((m, i) =>
         i === editingMeal.index
@@ -284,6 +294,14 @@ export default function Home() {
       ),
     }));
     setEditingMeal(null);
+  }
+
+  function navigateDay(offset: number) {
+    setEditingMeal(null);
+    setSelectedDate((prev) => {
+      const next = shiftDate(prev, offset);
+      return next > today ? prev : next;
+    });
   }
 
   function setSetting<K extends keyof Settings>(key: K, value: Settings[K]) {
@@ -490,17 +508,33 @@ export default function Home() {
         <motion.article className="panel panel-meals" variants={panelVariants}>
           <div className="panel-title-row">
             <h2>Meals</h2>
-            <span>{day.meals.length} entries</span>
+            <span>{selectedDay.meals.length} entries</span>
+          </div>
+
+          <div className="day-nav">
+            <button className="day-nav-btn" onClick={() => navigateDay(-1)} title="Previous day">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button
+              className={`day-nav-label ${isToday ? "" : "past"}`}
+              onClick={() => setSelectedDate(today)}
+              title={isToday ? "Today" : "Jump to today"}
+            >
+              {isToday ? "Today" : fmtDate(selectedDate)}
+            </button>
+            <button className="day-nav-btn" onClick={() => navigateDay(1)} disabled={isToday} title="Next day">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
           </div>
 
           <div className="meals-scroll">
-            {day.meals.length === 0 && (
-              <p className="empty">No meals yet today.</p>
+            {selectedDay.meals.length === 0 && (
+              <p className="empty">{isToday ? "No meals yet today." : "No meals logged."}</p>
             )}
             <AnimatePresence initial={false}>
-              {day.meals.map((m, i) => (
+              {selectedDay.meals.map((m, i) => (
                 <motion.div
-                  key={`${m.name}-${i}`}
+                  key={`${selectedDate}-${m.name}-${i}`}
                   className="meal-item"
                   layout
                   initial={{ opacity: 0, y: 10, scale: 0.97 }}
@@ -554,7 +588,7 @@ export default function Home() {
                             <button className="meal-action-btn edit" onClick={() => startEditMeal(i)} title="Edit meal">
                               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
                             </button>
-                            <button className="meal-action-btn delete" onClick={() => deleteMeal(i)} title="Delete meal">
+                            <button className="meal-action-btn delete" onClick={() => deleteMeal(selectedDate, i)} title="Delete meal">
                               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
                             </button>
                           </div>
@@ -577,7 +611,7 @@ export default function Home() {
           </div>
 
           <AnimatePresence>
-            {lastAdded && (
+            {lastAdded && isToday && (
               <motion.div
                 className="toast-card"
                 initial={{ opacity: 0, y: 12, height: 0 }}

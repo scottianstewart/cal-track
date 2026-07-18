@@ -355,6 +355,67 @@ body {
   color: var(--bad);
 }
 
+/* ---------- day navigation ---------- */
+
+.day-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.day-nav-btn {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 120ms ease;
+  padding: 0;
+}
+
+.day-nav-btn:hover:not(:disabled) {
+  color: var(--ink);
+  border-color: var(--line-strong);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.day-nav-btn:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.day-nav-label {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.65rem;
+  cursor: default;
+  transition: all 120ms ease;
+}
+
+.day-nav-label.past {
+  color: var(--accent);
+  border-color: var(--accent-dim);
+  background: rgba(255, 243, 18, 0.06);
+  cursor: pointer;
+}
+
+.day-nav-label.past:hover {
+  background: rgba(255, 243, 18, 0.12);
+}
+
 /* ---------- meals ---------- */
 
 .meals-scroll {
@@ -415,7 +476,6 @@ body {
   opacity: 1;
 }
 
-/* always show on touch devices */
 @media (hover: none) {
   .meal-actions {
     opacity: 1;
@@ -463,8 +523,6 @@ body {
   background: var(--bad-dim);
   border-color: rgba(255, 92, 92, 0.25);
 }
-
-/* ---------- meal edit form ---------- */
 
 .meal-edit-form {
   display: flex;
