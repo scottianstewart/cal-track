@@ -234,7 +234,7 @@ export default function Home() {
         return;
       }
 
-      updateDay(today, (d) => ({
+      updateDay(selectedDate, (d) => ({
         ...d,
         meals: [
           ...d.meals,
